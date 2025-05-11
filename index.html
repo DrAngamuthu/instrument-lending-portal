@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instrument Lending Request</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+        label, input, select {
+            margin: 10px 0;
+            padding: 8px;
+            width: 100%;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h2>Instrument Lending Request Form</h2>
+    <form id="requestForm" onsubmit="submitRequest(event)">
+        <label for="rollno">Roll Number:</label>
+        <input type="text" id="rollno" name="rollno" required>
+
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="contact">Contact Number:</label>
+        <input type="text" id="contact" name="contact" required>
+
+        <label for="email">Email Address:</label>
+        <input type="email" id="email" name="email" required>
+
+        <label for="guide">Project Guide:</label>
+        <input type="text" id="guide" name="guide" required>
+
+        <label for="purpose">Purpose of Instrument Usage:</label>
+        <input type="text" id="purpose" name="purpose" required>
+
+        <label for="where">Where the Instrument will be used:</label>
+        <input type="text" id="where" name="where" required>
+
+        <label for="instruments">Select Instruments:</label>
+        <select id="instruments" name="instruments" multiple required>
+            <!-- List of instruments will be dynamically loaded from the backend -->
+        </select>
+
+        <label for="letter">Upload Approval Letter (PDF or Image):</label>
+        <input type="file" id="letter" name="letter" accept="application/pdf, image/*" required>
+
+        <label for="returnDate">Return Date:</label>
+        <input type="date" id="returnDate" name="returnDate" value="" required>
+
+        <button type="submit">Submit Request</button>
+    </form>
+
+    <script>
+        // Dynamically load instruments list from the backend Google Apps Script API
+        fetch('PASTE_YOUR_WEB_APP_URL_HERE?action=getInstruments')
+            .then(response => response.json())
+            .then(data => {
+                const instrumentsSelect = document.getElementById('instruments');
+                data.forEach(instrument => {
+                    const option = document.createElement('option');
+                    option.value = instrument.InstrumentID;
+                    option.textContent = instrument.InstrumentName;
+                    instrumentsSelect.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error fetching instruments:', error));
+
+        // Submit request form
+        function submitRequest(event) {
+            event.preventDefault();
+
+            const form = document.getElementById('requestForm');
+            const formData = new FormData(form);
+            const returnDate = new Date(formData.get('returnDate'));
+            const defaultReturnDate = new Date();
+            defaultReturnDate.setDate(defaultReturnDate.getDate() + 14); // 2 weeks from today
+            const returnDateString = returnDate || defaultReturnDate.toISOString().split('T')[0];
+
+            const requestData = {
+                action: 'submitRequest',
+                rollno: formData.get('rollno'),
+                name: formData.get('name'),
+                contact: formData.get('contact'),
+                email: formData.get('email'),
+                guide: formData.get('guide'),
+                purpose: formData.get('purpose'),
+                where: formData.get('where'),
+                instruments: Array.from(formData.getAll('instruments')).join(','),
+                returnDate: returnDateString
+            };
+
+            // Simulate file upload (you'll need a backend or Drive API to upload the letter)
+            const letterFile = formData.get('letter');
+            if (letterFile) {
+                const letterFileId = uploadLetterFile(letterFile); // Function to handle file upload
+                requestData.letterId = letterFileId;  // Save file ID for later use
+            }
+
+            // Send request data to Google Apps Script Web API
+            fetch('PASTE_YOUR_WEB_APP_URL_HERE', {
+                method: 'POST',
+                body: new URLSearchParams(requestData)
+            })
+            .then(response => response.text())
+            .then(data => {
+                alert('Request submitted successfully!');
+                form.reset();  // Reset form after submission
+            })
+            .catch(error => {
+                alert('Error submitting request: ' + error);
+            });
+        }
+
+        // Dummy function for file upload, replace with Google Drive API logic if needed
+        function uploadLetterFile(file) {
+            // Here, you need to integrate Google Drive API for file upload
+            return 'dummyFileId';  // Replace with actual file ID
+        }
+    </script>
+</body>
+</html>
